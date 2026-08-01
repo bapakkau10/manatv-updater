@@ -47,19 +47,15 @@ def main():
             try:
                 page.goto(target_url, timeout=60000)
                 page.mouse.click(500, 500)
-                page.wait_for_timeout(10000)
+                page.wait_for_timeout(12000)
 
-                if found_links:
-                    # Tapis cari yang mengandungi 'chunks.m3u8' di dalam struktur folder abr
-                    chunks_links = [l for l in found_links if "chunks.m3u8" in l]
-                    
-                    if chunks_links:
-                        # Ambil link chunks yang paling lengkap/panjang (biasanya 1080p)
-                        best_link = max(chunks_links, key=len)
-                    else:
-                        best_link = max(found_links, key=len)
+                # WAJIB tapisan ketat: Hanya ambil yang ada 'chunks.m3u8' sahaja!
+                chunks_links = [l for l in found_links if "chunks.m3u8" in l]
 
-                    print(f"Jumput Link Tepat (Chunks): {best_link}")
+                if chunks_links:
+                    # Ambil link chunks yang paling panjang (biasanya resolusi 1080p tertinggi)
+                    best_link = max(chunks_links, key=len)
+                    print(f"Jumput Link CHUNKS Tepat: {best_link}")
                     
                     if ACCOUNT_ID and NAMESPACE_ID and API_TOKEN:
                         success = update_kv(key_name, best_link)
@@ -70,7 +66,7 @@ def main():
                     else:
                         print("Simulasi sahaja (Tiada KV credentials).")
                 else:
-                    print(f"Tiada pautan .m3u8 dikesan untuk {key_name}")
+                    print(f"Amaran: Tiada pautan chunks.m3u8 dikesan untuk {key_name}")
 
             except Exception as e:
                 print(f"Error pada {key_name}: {e}")
