@@ -50,17 +50,15 @@ def main():
                 page.wait_for_timeout(10000)
 
                 if found_links:
-                    # Tapis cari link yang mengandungi 'chunks.m3u8' (Resolusi penuh yang sah)
-                    chunks_links = [l for l in found_links if "chunks.m3u8" in l]
+                    # Kita utamakan 'playlist.m3u8' kerana ia mengandungi semua pilihan resolusi
+                    playlist_links = [l for l in found_links if "playlist.m3u8" in l]
                     
-                    if chunks_links:
-                        # Ambil link chunks yang paling baik (biasanya 1080p)
-                        best_link = max(chunks_links, key=len)
+                    if playlist_links:
+                        best_link = max(playlist_links, key=len)
                     else:
-                        # Kalau tak jumpa chunks, ambil apa-apa link m3u8 yang ada
                         best_link = max(found_links, key=len)
 
-                    print(f"Jumput Link Tepat: {best_link}")
+                    print(f"Jumput Master Playlist: {best_link}")
                     
                     if ACCOUNT_ID and NAMESPACE_ID and API_TOKEN:
                         success = update_kv(key_name, best_link)
@@ -69,7 +67,7 @@ def main():
                         else:
                             print(f"Gagal simpan ke KV untuk {key_name}")
                     else:
-                        print("Simulasi sahaja (Tiada KV credentials dalam local).")
+                        print("Simulasi sahaja (Tiada KV credentials).")
                 else:
                     print(f"Tiada pautan .m3u8 dikesan untuk {key_name}")
 
