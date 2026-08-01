@@ -48,7 +48,6 @@ def main():
             found_links = []
 
             def handle_request(request):
-                # Tangkap sebarang request yang ada kaitan dengan m3u8
                 if "m3u8" in request.url:
                     if request.url not in found_links:
                         found_links.append(request.url)
@@ -57,8 +56,6 @@ def main():
 
             try:
                 page.goto(target_url, timeout=60000)
-                
-                # Cuba klik pada skrin atau elemen player untuk paksa video dimainkan
                 page.wait_for_timeout(3000)
                 try:
                     page.click("video", timeout=3000)
@@ -70,13 +67,28 @@ def main():
                 except:
                     pass
 
-                # Tunggu 15 saat untuk pastikan player buat permintaan rangkaian (network request)
                 page.wait_for_timeout(15000)
 
                 if found_links:
-                    # Pilih pautan m3u8 yang paling panjang/lengkap (biasanya mengandungi token)
-                    best_link = max(found_links, key=len)
-                    print(f"Jumpa Link M3U8: {best_link}")
+                    raw_link = max(found_links, key=len)
+                    print(f"Jumpa Link Asal: {raw_link}")
+
+                    # Tukar playlist.m3u8 kepada chunks.m3u8 dengan mengekalkan token md5 di belakang
+                    if "playlist.m3u8" in raw_link:
+                        parts = raw_link.split("/")
+                        if len(parts) > 4:
+                            channel_slug = parts[-2] # Contoh: siaratv, freemovies, dll.
+                            base_prefix = raw_link.split("/playlist.m3u8")[0]
+                            query_params = raw_link.split("?")[-1] if "?" in raw_link else ""
+                            
+                            # Gabungkan semula menjadi format chunks sebenar berserta token asal
+                            best_link = f"{base_prefix}/abr/{channel_slug}_1080p/chunks.m3u8?{query_params}"
+                        else:
+                            best_link = raw_link
+                    else:
+                        best_link = raw_link
+
+                    print(f"Pautan Chunks Akhir: {best_link}")
                     
                     if ACCOUNT_ID and NAMESPACE_ID and API_TOKEN:
                         success = update_kv(key_name, best_link)
