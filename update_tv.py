@@ -54,11 +54,25 @@ def main():
             page.on("request", handle_request)
 
             try:
+                # 1. Buka URL saluran
                 page.goto(target_url, timeout=60000)
-                page.mouse.click(500, 500)
+                page.wait_for_timeout(3000)
+
+                # 2. Cuba klik pada elemen video atau tengah skrin untuk paksa video 'play'
+                try:
+                    page.click("video", timeout=3000)
+                except:
+                    pass
+                
+                try:
+                    page.mouse.click(960, 540) # Klik tepat di tengah skrin (posisi butang play lazim)
+                except:
+                    pass
+
+                # 3. Tunggu masa yang cukup supaya player mula minta fail chunks.m3u8
                 page.wait_for_timeout(15000)
 
-                # Tapis ketat ambil yang ada chunks.m3u8
+                # 4. Tapis hanya ambil pautan yang mengandungi chunks.m3u8
                 chunks_links = [l for l in found_links if "chunks.m3u8" in l]
 
                 if chunks_links:
