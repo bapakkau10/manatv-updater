@@ -45,18 +45,21 @@ def main():
         for key_name, target_url in CHANNELS.items():
             print(f"\nSedang proses: {key_name}")
             page = context.new_page()
-            found_links = []
+            found_chunks = []
 
             def handle_request(request):
-                if "m3u8" in request.url:
-                    if request.url not in found_links:
-                        found_links.append(request.url)
+                # Cari terus pautan chunks.m3u8 asli yang ditarik oleh player
+                if "chunks.m3u8" in request.url:
+                    if request.url not in found_chunks:
+                        found_chunks.append(request.url)
 
             page.on("request", handle_request)
 
             try:
                 page.goto(target_url, timeout=60000)
-                page.wait_for_timeout(3000)
+                page.wait_for_timeout(4000)
+                
+                # Paksa player mainkan video supaya ia request fail chunks
                 try:
                     page.click("video", timeout=3000)
                 except:
@@ -67,28 +70,13 @@ def main():
                 except:
                     pass
 
-                page.wait_for_timeout(15000)
+                # Tunggu sehingga 20 saat untuk pastikan player mula sedut segmen chunks
+                page.wait_for_timeout(20000)
 
-                if found_links:
-                    raw_link = max(found_links, key=len)
-                    print(f"Jumpa Link Asal: {raw_link}")
-
-                    # Tukar playlist.m3u8 kepada chunks.m3u8 dengan mengekalkan token md5 di belakang
-                    if "playlist.m3u8" in raw_link:
-                        parts = raw_link.split("/")
-                        if len(parts) > 4:
-                            channel_slug = parts[-2] # Contoh: siaratv, freemovies, dll.
-                            base_prefix = raw_link.split("/playlist.m3u8")[0]
-                            query_params = raw_link.split("?")[-1] if "?" in raw_link else ""
-                            
-                            # Gabungkan semula menjadi format chunks sebenar berserta token asal
-                            best_link = f"{base_prefix}/abr/{channel_slug}_1080p/chunks.m3u8?{query_params}"
-                        else:
-                            best_link = raw_link
-                    else:
-                        best_link = raw_link
-
-                    print(f"Pautan Chunks Akhir: {best_link}")
+                if found_chunks:
+                    # Ambil pautan chunks asli yang paling panjang (kualiti tertinggi)
+                    best_link = max(found_chunks, key=len)
+                    print(f"Jumpa Chunks Asli Sah: {best_link}")
                     
                     if ACCOUNT_ID and NAMESPACE_ID and API_TOKEN:
                         success = update_kv(key_name, best_link)
@@ -99,7 +87,7 @@ def main():
                     else:
                         print("Simulasi sahaja (Tiada KV credentials).")
                 else:
-                    print(f"Amaran: Tiada pautan m3u8 dikesan untuk {key_name}")
+                    print(f"Amaran: Chunks tidak dijumpai untuk {key_name}")
 
             except Exception as e:
                 print(f"Error pada {key_name}: {e}")
