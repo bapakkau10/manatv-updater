@@ -47,7 +47,8 @@ def main():
             found_links = []
 
             def handle_request(request):
-                if ".m3u8" in request.url:
+                # Tangkap apa sahaja request yang mengandungi chunks.m3u8 secara langsung
+                if "chunks.m3u8" in request.url:
                     if request.url not in found_links:
                         found_links.append(request.url)
 
@@ -55,31 +56,22 @@ def main():
 
             try:
                 page.goto(target_url, timeout=60000)
-                page.mouse.click(500, 500)
-                page.wait_for_timeout(10000)
+                
+                # Cuba klik beberapa kali pada skrin untuk paksa video player 'play'
+                try:
+                    page.mouse.click(500, 500)
+                    page.wait_for_timeout(2000)
+                    page.mouse.click(600, 400) # Klik kedua di kawasan player
+                except:
+                    pass
+
+                # Berikan masa yang lebih lama (25 saat) khas untuk GitHub Actions muat turun segment chunks
+                page.wait_for_timeout(25000)
 
                 if found_links:
-                    # Ambil apa-apa pautan m3u8 yang dijumpai
-                    raw_link = max(found_links, key=len)
-                    print(discovered := f"Jumpa pautan asal: {raw_link}")
-
-                    # Logik Pintar: Jika jumpa playlist.m3u8, auto-tukar jadi format chunks 1080p
-                    if "playlist.m3u8" in raw_link:
-                        # Contoh: ubah .../siaratv/playlist.m3u8?md5=... kepada .../siaratv/abr/siaratv_1080p/chunks.m3u8?md5=...
-                        # Kita ekstrak nama channel dari URL
-                        parts = raw_link.split("/")
-                        if len(parts) > 4:
-                            channel_slug = parts[-2] # cth: siaratv
-                            # Bina semula link chunks standard
-                            base_prefix = raw_link.split("/playlist.m3u8")[0]
-                            query_params = raw_link.split("?")[-1] if "?" in raw_link else ""
-                            
-                            # Nama folder resolusi ikut nama channel
-                            best_link = f"{base_prefix}/abr/{channel_slug}_1080p/chunks.m3u8?{query_params}"
-                    else:
-                        best_link = raw_link
-
-                    print(f"Pautan Akhir Disimpan: {best_link}")
+                    # Ambil pautan chunks yang paling panjang (resolusi tertinggi / 1080p)
+                    best_link = max(found_links, key=len)
+                    print(f"Jumpa Link CHUNKS Asli & Sah: {best_link}")
                     
                     if ACCOUNT_ID and NAMESPACE_ID and API_TOKEN:
                         success = update_kv(key_name, best_link)
@@ -90,7 +82,7 @@ def main():
                     else:
                         print("Simulasi sahaja (Tiada KV credentials).")
                 else:
-                    print(f"Amaran: Tiada pautan m3u8 dikesan langsung untuk {key_name}")
+                    print(f"Amaran: Tiada pautan chunks.m3u8 dikesan untuk {key_name}")
 
             except Exception as e:
                 print(f"Error pada {key_name}: {e}")
