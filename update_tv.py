@@ -45,38 +45,39 @@ def main():
         for key_name, target_url in CHANNELS.items():
             print(f"\nSedang proses: {key_name}")
             page = context.new_page()
-            found_chunks = []
+            found_links = []
 
             def handle_request(request):
-                # Cari terus pautan chunks.m3u8 asli yang ditarik oleh player
+                # Cari terus URL yang mengandungi chunks.m3u8 (asli berserta token auto-generated)
                 if "chunks.m3u8" in request.url:
-                    if request.url not in found_chunks:
-                        found_chunks.append(request.url)
+                    if request.url not in found_links:
+                        found_links.append(request.url)
 
             page.on("request", handle_request)
 
             try:
                 page.goto(target_url, timeout=60000)
-                page.wait_for_timeout(4000)
+                page.wait_for_timeout(3000)
                 
-                # Paksa player mainkan video supaya ia request fail chunks
+                # Paksa klik pada pelbagai sudut player untuk pastikan video 'play'
                 try:
-                    page.click("video", timeout=3000)
+                    page.click("video", timeout=2000)
                 except:
                     pass
                 
                 try:
-                    page.mouse.click(600, 400)
+                    # Klik butang play tengah skrin
+                    page.mouse.click(960, 540)
                 except:
                     pass
 
-                # Tunggu sehingga 20 saat untuk pastikan player mula sedut segmen chunks
-                page.wait_for_timeout(20000)
+                # Tunggu sehingga 25 saat supaya pelayar sempat sedut segmen chunks.m3u8 yang sebenar
+                page.wait_for_timeout(25000)
 
-                if found_chunks:
-                    # Ambil pautan chunks asli yang paling panjang (kualiti tertinggi)
-                    best_link = max(found_chunks, key=len)
-                    print(f"Jumpa Chunks Asli Sah: {best_link}")
+                if found_links:
+                    # Ambil pautan chunks asli yang sah (paling panjang/resolusi tinggi)
+                    best_link = max(found_links, key=len)
+                    print(f"Jumpa Chunks Asli Auto-Generated: {best_link}")
                     
                     if ACCOUNT_ID and NAMESPACE_ID and API_TOKEN:
                         success = update_kv(key_name, best_link)
@@ -87,7 +88,7 @@ def main():
                     else:
                         print("Simulasi sahaja (Tiada KV credentials).")
                 else:
-                    print(f"Amaran: Chunks tidak dijumpai untuk {key_name}")
+                    print(f"Amaran: Chunks tidak dikesan untuk {key_name}")
 
             except Exception as e:
                 print(f"Error pada {key_name}: {e}")
