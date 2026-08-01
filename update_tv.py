@@ -2,9 +2,9 @@ import os
 import requests
 from playwright.sync_api import sync_playwright
 
-ACCOUNT_ID = os.environ.get("CF_ACCOUNT_ID")
-NAMESPACE_ID = os.environ.get("CF_NAMESPACE_ID")
-API_TOKEN = os.environ.get("CF_API_TOKEN")
+ACCOUNT_ID = os.environ.get("ACCOUNT_ID")
+NAMESPACE_ID = os.environ.get("NAMESPACE_ID")
+API_TOKEN = os.environ.get("API_TOKEN")
 
 CHANNELS = {
     "siaraTV": "https://mana2.my/channel/siara-tv",
@@ -33,16 +33,12 @@ def main():
                 "--dev-shm-usage",
                 "--no-sandbox",
                 "--disable-setuid-sandbox",
-                "--disable-blink-features=AutomationControlled",
-                "--disable-infobars",
-                "--window-size=1920,1080"
+                "--disable-blink-features=AutomationControlled"
             ]
         )
         context = browser.new_context(
             user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
-            viewport={'width': 1920, 'height': 1080},
-            locale="ms-MY",
-            timezone_id="Asia/Kuala_Lumpur"
+            viewport={'width': 1920, 'height': 1080}
         )
         
         for key_name, target_url in CHANNELS.items():
@@ -59,16 +55,15 @@ def main():
 
             try:
                 page.goto(target_url, timeout=60000)
-                page.wait_for_timeout(3000)
                 page.mouse.click(500, 500)
-                # Beri masa lebih panjang di GitHub Actions untuk lulus cabaran Cloudflare & load player
-                page.wait_for_timeout(20000)
+                page.wait_for_timeout(15000)
 
+                # Tapis ketat ambil yang ada chunks.m3u8
                 chunks_links = [l for l in found_links if "chunks.m3u8" in l]
 
                 if chunks_links:
                     best_link = max(chunks_links, key=len)
-                    print(f"Jumpa Link CHUNKS Tepat: {best_link}")
+                    print(f"Link terpilih: {best_link}")
                     
                     if ACCOUNT_ID and NAMESPACE_ID and API_TOKEN:
                         success = update_kv(key_name, best_link)
