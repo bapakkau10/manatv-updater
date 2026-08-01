@@ -2,7 +2,6 @@ import os
 import requests
 from playwright.sync_api import sync_playwright
 
-# Masukkan maklumat Cloudflare anda di sini (atau biarkan ambil dari GitHub Secrets)
 ACCOUNT_ID = os.environ.get("CF_ACCOUNT_ID")
 NAMESPACE_ID = os.environ.get("CF_NAMESPACE_ID")
 API_TOKEN = os.environ.get("CF_API_TOKEN")
@@ -51,14 +50,26 @@ def main():
                 page.wait_for_timeout(10000)
 
                 if found_links:
-                    best_link = max(found_links, key=len)
-                    print(f"Jumput Link: {best_link}")
+                    # Tapis cari link yang mengandungi 'chunks.m3u8' (Resolusi penuh yang sah)
+                    chunks_links = [l for l in found_links if "chunks.m3u8" in l]
                     
-                    success = update_kv(key_name, best_link)
-                    if success:
-                        print(f"Berjaya simpan {key_name} ke Cloudflare KV!")
+                    if chunks_links:
+                        # Ambil link chunks yang paling baik (biasanya 1080p)
+                        best_link = max(chunks_links, key=len)
                     else:
-                        print(f"Gagal simpan ke KV untuk {key_name}")
+                        # Kalau tak jumpa chunks, ambil apa-apa link m3u8 yang ada
+                        best_link = max(found_links, key=len)
+
+                    print(f"Jumput Link Tepat: {best_link}")
+                    
+                    if ACCOUNT_ID and NAMESPACE_ID and API_TOKEN:
+                        success = update_kv(key_name, best_link)
+                        if success:
+                            print(f"Berjaya simpan {key_name} ke Cloudflare KV!")
+                        else:
+                            print(f"Gagal simpan ke KV untuk {key_name}")
+                    else:
+                        print("Simulasi sahaja (Tiada KV credentials dalam local).")
                 else:
                     print(f"Tiada pautan .m3u8 dikesan untuk {key_name}")
 
