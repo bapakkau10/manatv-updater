@@ -26,7 +26,17 @@ def update_kv(key_name, m3u8_url):
 
 def main():
     with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)
+        # Tambah args anti-bot supaya GitHub Actions (Linux headless) tak dikesan sebagai bot
+        browser = p.chromium.launch(
+            headless=True,
+            args=[
+                "--disable-gpu",
+                "--dev-shm-usage",
+                "--no-sandbox",
+                "--disable-setuid-sandbox",
+                "--disable-blink-features=AutomationControlled"
+            ]
+        )
         context = browser.new_context(
             user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
             viewport={'width': 1920, 'height': 1080}
@@ -49,11 +59,10 @@ def main():
                 page.mouse.click(500, 500)
                 page.wait_for_timeout(12000)
 
-                # WAJIB tapisan ketat: Hanya ambil yang ada 'chunks.m3u8' sahaja!
+                # Tapisan ketat mengambil pautan chunks.m3u8
                 chunks_links = [l for l in found_links if "chunks.m3u8" in l]
 
                 if chunks_links:
-                    # Ambil link chunks yang paling panjang (biasanya resolusi 1080p tertinggi)
                     best_link = max(chunks_links, key=len)
                     print(f"Jumput Link CHUNKS Tepat: {best_link}")
                     
