@@ -50,15 +50,16 @@ def main():
                 page.wait_for_timeout(10000)
 
                 if found_links:
-                    # Kita utamakan 'playlist.m3u8' kerana ia mengandungi semua pilihan resolusi
-                    playlist_links = [l for l in found_links if "playlist.m3u8" in l]
+                    # Tapis cari yang mengandungi 'chunks.m3u8' di dalam struktur folder abr
+                    chunks_links = [l for l in found_links if "chunks.m3u8" in l]
                     
-                    if playlist_links:
-                        best_link = max(playlist_links, key=len)
+                    if chunks_links:
+                        # Ambil link chunks yang paling lengkap/panjang (biasanya 1080p)
+                        best_link = max(chunks_links, key=len)
                     else:
                         best_link = max(found_links, key=len)
 
-                    print(f"Jumput Master Playlist: {best_link}")
+                    print(f"Jumput Link Tepat (Chunks): {best_link}")
                     
                     if ACCOUNT_ID and NAMESPACE_ID and API_TOKEN:
                         success = update_kv(key_name, best_link)
