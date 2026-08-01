@@ -26,7 +26,6 @@ def update_kv(key_name, m3u8_url):
 
 def main():
     with sync_playwright() as p:
-        # Tambah args anti-bot supaya GitHub Actions (Linux headless) tak dikesan sebagai bot
         browser = p.chromium.launch(
             headless=True,
             args=[
@@ -57,14 +56,30 @@ def main():
             try:
                 page.goto(target_url, timeout=60000)
                 page.mouse.click(500, 500)
-                page.wait_for_timeout(12000)
+                page.wait_for_timeout(10000)
 
-                # Tapisan ketat mengambil pautan chunks.m3u8
-                chunks_links = [l for l in found_links if "chunks.m3u8" in l]
+                if found_links:
+                    # Ambil apa-apa pautan m3u8 yang dijumpai
+                    raw_link = max(found_links, key=len)
+                    print(discovered := f"Jumpa pautan asal: {raw_link}")
 
-                if chunks_links:
-                    best_link = max(chunks_links, key=len)
-                    print(f"Jumput Link CHUNKS Tepat: {best_link}")
+                    # Logik Pintar: Jika jumpa playlist.m3u8, auto-tukar jadi format chunks 1080p
+                    if "playlist.m3u8" in raw_link:
+                        # Contoh: ubah .../siaratv/playlist.m3u8?md5=... kepada .../siaratv/abr/siaratv_1080p/chunks.m3u8?md5=...
+                        # Kita ekstrak nama channel dari URL
+                        parts = raw_link.split("/")
+                        if len(parts) > 4:
+                            channel_slug = parts[-2] # cth: siaratv
+                            # Bina semula link chunks standard
+                            base_prefix = raw_link.split("/playlist.m3u8")[0]
+                            query_params = raw_link.split("?")[-1] if "?" in raw_link else ""
+                            
+                            # Nama folder resolusi ikut nama channel
+                            best_link = f"{base_prefix}/abr/{channel_slug}_1080p/chunks.m3u8?{query_params}"
+                    else:
+                        best_link = raw_link
+
+                    print(f"Pautan Akhir Disimpan: {best_link}")
                     
                     if ACCOUNT_ID and NAMESPACE_ID and API_TOKEN:
                         success = update_kv(key_name, best_link)
@@ -75,7 +90,7 @@ def main():
                     else:
                         print("Simulasi sahaja (Tiada KV credentials).")
                 else:
-                    print(f"Amaran: Tiada pautan chunks.m3u8 dikesan untuk {key_name}")
+                    print(f"Amaran: Tiada pautan m3u8 dikesan langsung untuk {key_name}")
 
             except Exception as e:
                 print(f"Error pada {key_name}: {e}")
