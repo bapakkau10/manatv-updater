@@ -5,7 +5,6 @@ import requests
 from playwright.sync_api import sync_playwright
 
 def restore_session():
-    # Terus guna fail zip yang ada dalam repository
     if os.path.exists("tonton_session.zip"):
         with zipfile.ZipFile("tonton_session.zip", 'r') as zip_ref:
             zip_ref.extractall("./tonton_session")
@@ -55,23 +54,31 @@ def main():
                 if captured:
                     return
                 resp_url = response.url
-                if "/master.m3u8" in resp_url and "bpkio_serviceid" in resp_url:
+                # Cari apa-apa URL yang mengandungi m3u8 atau bpkio
+                if "m3u8" in resp_url or "bpkio" in resp_url:
                     master_link = resp_url
                     captured = True
-                    print(f"[{key_name}] Jumpai Master M3u8: {master_link}")
+                    print(f"[{key_name}] Jumpai Stream Link: {master_link}")
 
             page.on("response", handle_response)
 
             print(f"Sedang akses {key_name}: {url}...")
             try:
-                page.goto(url, timeout=60000, wait_until="networkidle")
-                start_time = time.time()
-                while not captured and (time.time() - start_time) < 15:
-                    time.sleep(1)
+                page.goto(url, timeout=60000, wait_until="domcontentloaded")
+                
+                # Tunggu dan cuba klik pada bahagian tengah skrin untuk pastikan player 'play'
+                for _ in range(5):
+                    if captured:
+                        break
                     try:
-                        page.mouse.click(640, 400)
+                        time.sleep(3)
+                        page.mouse.click(680, 380)
                     except Exception:
                         pass
+                
+                start_time = time.time()
+                while not captured and (time.time() - start_time) < 10:
+                    time.sleep(1)
             except Exception as e:
                 print(f"[{key_name}] Error: {e}")
 
