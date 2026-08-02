@@ -28,10 +28,9 @@ def main():
     }
 
     with sync_playwright() as p:
-        # Guna resolusi skrin standard supaya elemen video nampak
         browser = p.chromium.launch(headless=True)
         context = browser.new_context(
-            user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+            user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36",
             viewport={"width": 1280, "height": 800}
         )
         page = context.new_page()
@@ -41,8 +40,8 @@ def main():
 
             def handle_request(intercepted_request):
                 req_url = intercepted_request.url
-                # Tangkap apa sahaja pautan yang mengandungi .m3u8
-                if ".m3u8" in req_url:
+                # Cari pautan .m3u8 yang membawa token sesi tonton (mesti ada bpkio_serviceid atau format live-ssar)
+                if ".m3u8" in req_url and "bpkio_serviceid" in req_url:
                     if req_url not in captured_links:
                         captured_links.append(req_url)
 
@@ -52,30 +51,26 @@ def main():
             try:
                 page.goto(url, timeout=60000, wait_until="domcontentloaded")
                 
-                # Tunggu beberapa saat dan cuba klik pada bahagian tengah skrin/video untuk cetuskan pemain
-                time.sleep(5)
+                # Tunggu pemain video dimuatkan dan klik untuk aktifkan stream
+                time.sleep(6)
                 try:
+                    # Cuba klik di tengah skrin (kawasan player)
                     page.mouse.click(640, 400)
                 except Exception:
                     pass
                 
-                # Tunggu stream dimuatkan dan permintaan rangkaian berlaku
-                time.sleep(10)
+                # Beri masa tambahan untuk tangkap trafik token m3u8 yang keluar
+                time.sleep(8)
             except Exception as e:
                 print(f"[{key_name}] Error loading page: {e}")
 
-            # Pilih pautan m3u8 terbaik (biasanya master m3u8 tiada perkataan 'chunks' atau paling panjang)
-            valid_links = [l for l in captured_links if "chunks" not in l]
-            if not valid_links:
-                valid_links = captured_links # Kalau tak jumpa, ambil apa sahaja yang ada
-
-            if valid_links:
-                # Ambil pautan master m3u8 (biasanya yang paling pendek atau unik untuk manifest induk)
-                best_link = min(valid_links, key=len)
-                print(f"[{key_name}] Jumpai M3u8: {best_link}")
+            if captured_links:
+                # Ambil pautan m3u8 terkini yang dijumpai dengan token sesi lengkap
+                best_link = captured_links[-1]
+                print(f"[{key_name}] Jumpai Token M3u8: {best_link}")
                 update_cloudflare_kv(key_name, best_link)
             else:
-                print(f"[{key_name}] M3u8 tidak dijumpai.")
+                print(f"[{key_name}] M3u8 bertoken tidak dijumpai.")
 
             page.remove_listener("request", handle_request)
 
