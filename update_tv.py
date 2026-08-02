@@ -37,9 +37,10 @@ def main():
     }
 
     with sync_playwright() as p:
+        # Guna headless=False sebab kita guna xvfb-run di GitHub Actions
         browser = p.chromium.launch_persistent_context(
             user_data_dir="./tonton_session",
-            headless=True,
+            headless=False,
             viewport={"width": 1366, "height": 768},
             user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
         )
@@ -54,7 +55,6 @@ def main():
                 if captured:
                     return
                 resp_url = response.url
-                # Cari apa-apa URL yang mengandungi m3u8 atau bpkio
                 if "m3u8" in resp_url or "bpkio" in resp_url:
                     master_link = resp_url
                     captured = True
@@ -64,21 +64,16 @@ def main():
 
             print(f"Sedang akses {key_name}: {url}...")
             try:
-                page.goto(url, timeout=60000, wait_until="domcontentloaded")
+                page.goto(url, timeout=60000, wait_until="networkidle")
                 
-                # Tunggu dan cuba klik pada bahagian tengah skrin untuk pastikan player 'play'
-                for _ in range(5):
-                    if captured:
-                        break
+                # Cuba klik skrin untuk pastikan video 'play'
+                start_time = time.time()
+                while not captured and (time.time() - start_time) < 15:
+                    time.sleep(2)
                     try:
-                        time.sleep(3)
                         page.mouse.click(680, 380)
                     except Exception:
                         pass
-                
-                start_time = time.time()
-                while not captured and (time.time() - start_time) < 10:
-                    time.sleep(1)
             except Exception as e:
                 print(f"[{key_name}] Error: {e}")
 
