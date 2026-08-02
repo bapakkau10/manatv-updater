@@ -37,7 +37,6 @@ def main():
     }
 
     with sync_playwright() as p:
-        # Guna headless=False sebab kita guna xvfb-run di GitHub Actions
         browser = p.chromium.launch_persistent_context(
             user_data_dir="./tonton_session",
             headless=False,
@@ -47,18 +46,19 @@ def main():
         page = browser.new_page()
 
         for key_name, url in channels.items():
-            master_link = None
+            stream_link = None
             captured = False
 
             def handle_response(response):
-                nonlocal master_link, captured
+                nonlocal stream_link, captured
                 if captured:
                     return
                 resp_url = response.url
-                if "m3u8" in resp_url or "bpkio" in resp_url:
-                    master_link = resp_url
+                # Cari apa-apa URL aliran m3u8 yang ada parameter bpkio
+                if ".m3u8" in resp_url and "bpkio_serviceid" in resp_url:
+                    stream_link = resp_url
                     captured = True
-                    print(f"[{key_name}] Jumpai Stream Link: {master_link}")
+                    print(f"[{key_name}] Jumpai Stream M3u8: {stream_link}")
 
             page.on("response", handle_response)
 
@@ -66,7 +66,7 @@ def main():
             try:
                 page.goto(url, timeout=60000, wait_until="networkidle")
                 
-                # Cuba klik skrin untuk pastikan video 'play'
+                # Biarkan ia tunggu seketika dan cuba klik pada player video
                 start_time = time.time()
                 while not captured and (time.time() - start_time) < 15:
                     time.sleep(2)
@@ -77,10 +77,10 @@ def main():
             except Exception as e:
                 print(f"[{key_name}] Error: {e}")
 
-            if master_link:
-                update_cloudflare_kv(key_name, master_link)
+            if stream_link:
+                update_cloudflare_kv(key_name, stream_link)
             else:
-                print(f"[{key_name}] Gagal dapatkan master m3u8.")
+                print(f"[{key_name}] Gagal dapatkan pautan m3u8.")
 
             page.remove_listener("response", handle_response)
             time.sleep(2)
