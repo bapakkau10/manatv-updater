@@ -2,9 +2,7 @@ import os
 import requests
 from playwright.sync_api import sync_playwright
 
-ACCOUNT_ID = "810e7bd19b4f27a6bccc0337dfe74289"
-NAMESPACE_ID = "174e94b1a1ad4b098a2f719f7614d8ec"
-API_TOKEN = "6tpyeHpdanMot48YKEyP1OBM5h_VveVNjH1OxJlU"
+
 
 CHANNELS = {
     "siaraTV": "https://mana2.my/channel/siara-tv",
