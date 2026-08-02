@@ -24,6 +24,9 @@ def main():
     TONTON_EMAIL = os.environ.get("TONTON_EMAIL")
     TONTON_PASSWORD = os.environ.get("TONTON_PASSWORD")
 
+    if not TONTON_EMAIL or not TONTON_PASSWORD:
+        print("AMARAN: TONTON_EMAIL atau TONTON_PASSWORD tidak dijumpai dalam Environment Variables!")
+
     channels = {
         "tv3": "https://watch.tonton.com.my/live/tv3",
         "tv9": "https://watch.tonton.com.my/live/tv9",
@@ -47,12 +50,14 @@ def main():
             page.goto("https://www.tonton.com.my/signin", timeout=60000)
             time.sleep(5)
             
-            # Masukkan emel dan password menggunakan selector yang tepat
-            page.fill("input[type='email'], input[name='email']", TONTON_EMAIL)
-            page.fill("input[type='password'], input[name='password']", TONTON_PASSWORD)
+            # Isi emel dan password secara selamat
+            page.wait_for_selector("input[type='email'], input[name='email']", timeout=15000)
+            page.fill("input[type='email'], input[name='email']", str(TONTON_EMAIL))
+            
+            page.wait_for_selector("input[type='password'], input[name='password']", timeout=15000)
+            page.fill("input[type='password'], input[name='password']", str(TONTON_PASSWORD))
             time.sleep(2)
             
-            # Tekan butang log masuk
             page.keyboard.press("Enter")
             time.sleep(10)
             print("Proses log masuk selesai dicuba.")
