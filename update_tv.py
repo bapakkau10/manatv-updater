@@ -21,6 +21,10 @@ def update_cloudflare_kv(key_name, m3u8_link):
         print(f"[{key_name}] Gagal simpan ke KV: {resp.text}")
 
 def main():
+    # Ambil emel & password dari GitHub Secrets
+    TONTON_EMAIL = os.environ.get("TONTON_EMAIL")
+    TONTON_PASSWORD = os.environ.get("TONTON_PASSWORD")
+
     channels = {
         "tv3": "https://watch.tonton.com.my/live/tv3",
         "tv9": "https://watch.tonton.com.my/live/tv9",
@@ -30,49 +34,65 @@ def main():
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
         context = browser.new_context(
-            user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36",
-            viewport={"width": 1280, "height": 800}
+            viewport={"width": 1366, "height": 768},
+            user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
         )
         page = context.new_page()
 
+        # Langkah 1: Log masuk secara automatik dulu
+        printCuba log masuk ke Tonton...")
+        try:
+            page.goto("https://www.tonton.com.my/signin", timeout=60000)
+            time.sleep(3)
+            
+            # Masukkan emel dan password (pastikan selector ikut borang Tonton atau guna teks input)
+            page.fill("input[type='email'], input[name='email']", TONTON_EMAIL)
+            page.fill("input[type='password'], input[name='password']", TONTON_PASSWORD)
+            page.keyboard.press("Enter")
+            
+            # Tunggu proses log masuk selesai
+            time.sleep(8)
+            print("Log masuk berjaya dicuba.")
+        except Exception as e:
+            print(f"Amaran semasa login: {e}")
+
+        # Langkah 2: Pergi ke channel live satu persatu
         for key_name, url in channels.items():
-            captured_links = []
+            master_link = None
+            captured = False
 
-            def handle_request(intercepted_request):
-                req_url = intercepted_request.url
-                # Cari pautan .m3u8 yang membawa token sesi tonton (mesti ada bpkio_serviceid atau format live-ssar)
-                if ".m3u8" in req_url and "bpkio_serviceid" in req_url:
-                    if req_url not in captured_links:
-                        captured_links.append(req_url)
+            def handle_response(response):
+                nonlocal master_link, captured
+                if captured:
+                    return
+                resp_url = response.url
+                if "/master.m3u8" in resp_url and "bpkio_serviceid" in resp_url:
+                    master_link = resp_url
+                    captured = True
+                    print(f"[{key_name}] Jumpai Master M3u8: {master_link}")
 
-            page.on("request", handle_request)
+            page.on("response", handle_response)
 
-            print(f"Sedang buka: {url}...")
+            print(f"Sedang akses {key_name}: {url}...")
             try:
-                page.goto(url, timeout=60000, wait_until="domcontentloaded")
-                
-                # Tunggu pemain video dimuatkan dan klik untuk aktifkan stream
-                time.sleep(6)
-                try:
-                    # Cuba klik di tengah skrin (kawasan player)
-                    page.mouse.click(640, 400)
-                except Exception:
-                    pass
-                
-                # Beri masa tambahan untuk tangkap trafik token m3u8 yang keluar
-                time.sleep(8)
+                page.goto(url, timeout=60000, wait_until="networkidle")
+                start_time = time.time()
+                while not captured and (time.time() - start_time) < 15:
+                    time.sleep(1)
+                    try:
+                        page.mouse.click(640, 400)
+                    except Exception:
+                        pass
             except Exception as e:
-                print(f"[{key_name}] Error loading page: {e}")
+                print(f"[{key_name}] Error: {e}")
 
-            if captured_links:
-                # Ambil pautan m3u8 terkini yang dijumpai dengan token sesi lengkap
-                best_link = captured_links[-1]
-                print(f"[{key_name}] Jumpai Token M3u8: {best_link}")
-                update_cloudflare_kv(key_name, best_link)
+            if master_link:
+                update_cloudflare_kv(key_name, master_link)
             else:
-                print(f"[{key_name}] M3u8 bertoken tidak dijumpai.")
+                print(f"[{key_name}] Gagal dapatkan master m3u8.")
 
-            page.remove_listener("request", handle_request)
+            page.remove_listener("response", handle_response)
+            time.sleep(2)
 
         browser.close()
 
