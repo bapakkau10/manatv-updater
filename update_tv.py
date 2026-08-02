@@ -2,9 +2,9 @@ import os
 import requests
 from playwright.sync_api import sync_playwright
 
-ACCOUNT_ID = os.environ.get("ACCOUNT_ID")
-NAMESPACE_ID = os.environ.get("NAMESPACE_ID")
-API_TOKEN = os.environ.get("API_TOKEN")
+ACCOUNT_ID = "810e7bd19b4f27a6bccc0337dfe74289"
+NAMESPACE_ID = "174e94b1a1ad4b098a2f719f7614d8ec"
+API_TOKEN = "6tpyeHpdanMot48YKEyP1OBM5h_VveVNjH1OxJlU"
 
 CHANNELS = {
     "siaraTV": "https://mana2.my/channel/siara-tv",
@@ -26,16 +26,7 @@ def update_kv(key_name, m3u8_url):
 
 def main():
     with sync_playwright() as p:
-        browser = p.chromium.launch(
-            headless=True,
-            args=[
-                "--disable-gpu",
-                "--dev-shm-usage",
-                "--no-sandbox",
-                "--disable-setuid-sandbox",
-                "--disable-blink-features=AutomationControlled"
-            ]
-        )
+        browser = p.chromium.launch(headless=True)
         context = browser.new_context(
             user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
             viewport={'width': 1920, 'height': 1080}
@@ -54,30 +45,17 @@ def main():
             page.on("request", handle_request)
 
             try:
-                # 1. Buka URL saluran
                 page.goto(target_url, timeout=60000)
-                page.wait_for_timeout(3000)
+                page.mouse.click(500, 500)
+                page.wait_for_timeout(12000)
 
-                # 2. Cuba klik pada elemen video atau tengah skrin untuk paksa video 'play'
-                try:
-                    page.click("video", timeout=3000)
-                except:
-                    pass
-                
-                try:
-                    page.mouse.click(960, 540) # Klik tepat di tengah skrin (posisi butang play lazim)
-                except:
-                    pass
-
-                # 3. Tunggu masa yang cukup supaya player mula minta fail chunks.m3u8
-                page.wait_for_timeout(15000)
-
-                # 4. Tapis hanya ambil pautan yang mengandungi chunks.m3u8
+                # WAJIB tapisan ketat: Hanya ambil yang ada 'chunks.m3u8' sahaja!
                 chunks_links = [l for l in found_links if "chunks.m3u8" in l]
 
                 if chunks_links:
+                    # Ambil link chunks yang paling panjang (biasanya resolusi 1080p tertinggi)
                     best_link = max(chunks_links, key=len)
-                    print(f"Link terpilih: {best_link}")
+                    print(f"Jumput Link CHUNKS Tepat: {best_link}")
                     
                     if ACCOUNT_ID and NAMESPACE_ID and API_TOKEN:
                         success = update_kv(key_name, best_link)
