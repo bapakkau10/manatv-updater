@@ -27,5 +27,7 @@ jobs:
           CF_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
           CF_NAMESPACE_ID: ${{ secrets.CF_NAMESPACE_ID }}
           CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          TONTON_EMAIL: ${{ secrets.TONTON_EMAIL }}
+          TONTON_PASSWORD: ${{ secrets.TONTON_PASSWORD }}
         run: |
           xvfb-run --auto-servernum python update_tv.py
