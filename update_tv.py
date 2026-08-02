@@ -21,7 +21,6 @@ def update_cloudflare_kv(key_name, m3u8_link):
         print(f"[{key_name}] Gagal simpan ke KV: {resp.text}")
 
 def main():
-    # Ambil emel & password dari GitHub Secrets
     TONTON_EMAIL = os.environ.get("TONTON_EMAIL")
     TONTON_PASSWORD = os.environ.get("TONTON_PASSWORD")
 
@@ -39,24 +38,22 @@ def main():
         )
         page = context.new_page()
 
-        # Langkah 1: Log masuk secara automatik dulu
-        printCuba log masuk ke Tonton...")
+        # Proses Auto-Login
+        print("Cuba log masuk ke Tonton...")
         try:
             page.goto("https://www.tonton.com.my/signin", timeout=60000)
             time.sleep(3)
             
-            # Masukkan emel dan password (pastikan selector ikut borang Tonton atau guna teks input)
             page.fill("input[type='email'], input[name='email']", TONTON_EMAIL)
             page.fill("input[type='password'], input[name='password']", TONTON_PASSWORD)
             page.keyboard.press("Enter")
             
-            # Tunggu proses log masuk selesai
             time.sleep(8)
             print("Log masuk berjaya dicuba.")
         except Exception as e:
             print(f"Amaran semasa login: {e}")
 
-        # Langkah 2: Pergi ke channel live satu persatu
+        # Proses Fetch Saluran Live
         for key_name, url in channels.items():
             master_link = None
             captured = False
