@@ -31,4 +31,5 @@ jobs:
           ACCOUNT_ID: ${{ secrets.ACCOUNT_ID }}
           NAMESPACE_ID: ${{ secrets.NAMESPACE_ID }}
           API_TOKEN: ${{ secrets.API_TOKEN }}
+          PROXY_URL: ${{ secrets.PROXY_URL }}
         run: python tonton.py
