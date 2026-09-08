@@ -3,7 +3,7 @@ import time
 import requests
 from playwright.sync_api import sync_playwright
 
-# Ambil konfigurasi dari Environment Variables (disimpan selamat dalam GitHub Secrets)
+# Menggunakan nama secret yang sedia ada dalam GitHub
 ACCOUNT_ID = os.environ.get("ACCOUNT_ID")
 NAMESPACE_ID = os.environ.get("NAMESPACE_ID")
 API_TOKEN = os.environ.get("API_TOKEN")
@@ -34,7 +34,6 @@ def main():
     }
 
     with sync_playwright() as p:
-        # Guna standard launch & context supaya sesuai running dalam GitHub Actions (Linux headless)
         browser = p.chromium.launch(
             headless=True,
             args=[
