@@ -70,7 +70,7 @@ def main():
 
             print(f"Sedang akses {key_name}: {url}...")
             try:
-                page.goto(url, timeout=60000, wait_until="networkidle")
+                page.goto(url, timeout=60000, wait_until="domcontentloaded")
                 
                 start_time = time.time()
                 while len(found_links) == 0 and (time.time() - start_time) < 25:
