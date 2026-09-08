@@ -1,15 +1,16 @@
-name: Tonton Auto Scraper
+name: Update Tonton M3U8 Links
 
 on:
   schedule:
-    - cron: '*/15 * * * *' # Jalankan setiap 15 minit automatik
-  workflow_dispatch: # Boleh tekan manual dari GitHub
+    - cron: '0 */4 * * *'
+  workflow_dispatch:
 
 jobs:
   run-scraper:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout code
+      - name: Checkout Repository
         uses: actions/checkout@v4
 
       - name: Set up Python
@@ -17,24 +18,17 @@ jobs:
         with:
           python-version: '3.10'
 
-      - name: Cache Tonton Browser Session
-        uses: actions/cache@v4
-        with:
-          path: ./tonton_session
-          key: ${{ runner.os }}-tonton-session
-          restore-keys: |
-            ${{ runner.os }}-tonton-session
-
-      - name: Install dependencies
+      - name: Install Dependencies
         run: |
           python -m pip install --upgrade pip
           pip install requests playwright
-          playwright install chromium
 
-      - name: Run script
+      - name: Install Playwright Chromium Browser
+        run: playwright install chromium
+
+      - name: Run Main Script
         env:
           ACCOUNT_ID: ${{ secrets.ACCOUNT_ID }}
           NAMESPACE_ID: ${{ secrets.NAMESPACE_ID }}
           API_TOKEN: ${{ secrets.API_TOKEN }}
-        run: |
-          python tonton.py
+        run: python main.py
