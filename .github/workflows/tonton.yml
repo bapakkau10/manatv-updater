@@ -27,8 +27,8 @@ jobs:
         run: playwright install chromium
 
       - name: Run Main Script
-        env:
-          ACCOUNT_ID: ${{ secrets.ACCOUNT_ID }}
-          NAMESPACE_ID: ${{ secrets.NAMESPACE_ID }}
-          API_TOKEN: ${{ secrets.API_TOKEN }}
-        run: python main.py
+      env:
+        ACCOUNT_ID: ${{ secrets.ACCOUNT_ID }}
+        NAMESPACE_ID: ${{ secrets.NAMESPACE_ID }}
+        API_TOKEN: ${{ secrets.API_TOKEN }}
+      run: python tonton.py
