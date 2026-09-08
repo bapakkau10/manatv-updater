@@ -3,14 +3,14 @@ import time
 import requests
 from playwright.sync_api import sync_playwright
 
-# Menggunakan nama secret yang sedia ada dalam GitHub
 ACCOUNT_ID = os.environ.get("ACCOUNT_ID")
 NAMESPACE_ID = os.environ.get("NAMESPACE_ID")
 API_TOKEN = os.environ.get("API_TOKEN")
+PROXY_URL = os.environ.get("PROXY_URL")  # Proxy IP Malaysia
 
 def update_cloudflare_kv(key_name, m3u8_link):
     if not ACCOUNT_ID or not NAMESPACE_ID or not API_TOKEN:
-        print(f"[{key_name}] Ralat: Kredential Cloudflare tidak lengkap dalam environment variables!")
+        print(f"[{key_name}] Ralat: Kredential Cloudflare tidak lengkap!")
         return
 
     kv_url = f"https://api.cloudflare.com/client/v4/accounts/{ACCOUNT_ID}/storage/kv/namespaces/{NAMESPACE_ID}/values/{key_name}"
@@ -43,10 +43,16 @@ def main():
                 "--disable-dev-shm-usage"
             ]
         )
-        context = browser.new_context(
-            viewport={"width": 1366, "height": 768},
-            user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
-        )
+        
+        # Konfigurasi proxy jika ada
+        context_options = {
+            "viewport": {"width": 1366, "height": 768},
+            "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/152.0.0.0 Safari/537.36"
+        }
+        if PROXY_URL:
+            context_options["proxy"] = {"server": PROXY_URL}
+
+        context = browser.new_context(**context_options)
         page = context.new_page()
 
         for key_name, url in channels.items():
