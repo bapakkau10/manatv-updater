@@ -3,11 +3,16 @@ import time
 import requests
 from playwright.sync_api import sync_playwright
 
+# Ambil konfigurasi dari Environment Variables (disimpan selamat dalam GitHub Secrets)
 ACCOUNT_ID = os.environ.get("ACCOUNT_ID")
 NAMESPACE_ID = os.environ.get("NAMESPACE_ID")
 API_TOKEN = os.environ.get("API_TOKEN")
 
 def update_cloudflare_kv(key_name, m3u8_link):
+    if not ACCOUNT_ID or not NAMESPACE_ID or not API_TOKEN:
+        print(f"[{key_name}] Ralat: Kredential Cloudflare tidak lengkap dalam environment variables!")
+        return
+
     kv_url = f"https://api.cloudflare.com/client/v4/accounts/{ACCOUNT_ID}/storage/kv/namespaces/{NAMESPACE_ID}/values/{key_name}"
     kv_headers = {
         "Authorization": f"Bearer {API_TOKEN}",
@@ -24,23 +29,26 @@ def main():
     channels = {
         "tv3": "https://watch.tonton.com.my/live/tv3",
         "tv9": "https://watch.tonton.com.my/live/tv9",
-        "8tv": "https://watch.tonton.com.my/live/8tv"
+        "8tv": "https://watch.tonton.com.my/live/8tv",
+        "5tv": "https://watch.tonton.com.my/live/8tv",
     }
 
     with sync_playwright() as p:
-        browser = p.chromium.launch_persistent_context(
-            user_data_dir="./tonton_session",
+        # Guna standard launch & context supaya sesuai running dalam GitHub Actions (Linux headless)
+        browser = p.chromium.launch(
             headless=True,
             args=[
                 "--disable-blink-features=AutomationControlled",
                 "--no-sandbox",
                 "--disable-setuid-sandbox",
                 "--disable-dev-shm-usage"
-            ],
+            ]
+        )
+        context = browser.new_context(
             viewport={"width": 1366, "height": 768},
             user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
         )
-        page = browser.new_page()
+        page = context.new_page()
 
         for key_name, url in channels.items():
             found_links = {}
